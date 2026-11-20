@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
+
+# Large local exports (keep summary tables and final maps only)
+exports/raw/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
