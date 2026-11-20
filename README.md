@@ -18,7 +18,7 @@ The [literature review](LITERATURE_REVIEW.md) found three problems with the exis
 2. **Most are snapshots.** Published work compares two or three dates with different class definitions, and several studies report no accuracy assessment.
 3. **The flood link is assumed, not measured.** No study converts lost wetland area into lost flood-storage volume, and the feedback loop in which flooding drives more land filling is known only from residents' accounts.
 
-This study follows on from my [Lagos rainfall and flood-risk research](https://github.com/GeoAlbertX/climate-flood-research), which showed that urban growth significantly raised the share of rain that becomes runoff in Lagos. This study asks where that growth came from, and what it removed.
+This study follows on from my [Lagos rainfall and flood-risk research](https://github.com/GeoAlbertX/climate-flood-research). Satellite measurements there showed that central Lagos was already built up by 2005, so the city's recent growth must have happened on its edges, often on wetland and lagoon fringe. This study maps where that growth went, and what it removed.
 
 ## Research questions
 
