@@ -1,5 +1,5 @@
 // =====================================================================
-// Wetland loss and land reclamation in Lagos, 1986–2024
+// Wetland loss and land reclamation in Lagos, 1986–2025
 // Google Earth Engine script: land-cover maps with Random Forest,
 // accuracy assessment and wetland-change statistics.
 //
@@ -19,7 +19,8 @@
 // =====================================================================
 
 // ---------------- settings -------------------------------------------
-var YEAR = 2024;          // epochs used in the study: 1986, 2000, 2013, 2024
+var YEAR = 2025;          // epochs used in the study: 1986, 2000, 2013, 2025
+                          // (each uses the dry season ending in that year, e.g. 2025 = Nov 2024 – Mar 2025)
 var TREES = 300;
 var SEED = 42;
 

@@ -24,7 +24,7 @@ This study follows on from my [Lagos rainfall and flood-risk research](https://g
 
 | # | Question |
 |---|---|
-| RQ1 | How much wetland, mangrove and lagoon water was converted to built-up land or sand fill in Lagos between 1986 and 2024, where, and when? |
+| RQ1 | How much wetland, mangrove and lagoon water was converted to built-up land or sand fill in Lagos between 1986 and 2025, where, and when? |
 | RQ2 | How much flood-storage volume did that conversion remove, and with what uncertainty? |
 | RQ3 | Is there measurable evidence of a feedback loop, i.e. are areas that flood more likely to be filled afterwards? |
 | RQ4 | Under different planning scenarios, how much wetland and storage could remain by 2050, given projected sea-level rise and subsidence? |
@@ -35,8 +35,8 @@ All data are free.
 
 | Data | Use | Source |
 |---|---|---|
-| Landsat 5, 7, 8 and 9 (Collection 2, Level 2) | Land-cover maps 1986–2024, 30 m | USGS, via Earth Engine |
-| Sentinel-2 surface reflectance | 10 m maps for 2016–2024 | ESA Copernicus, via Earth Engine |
+| Landsat 5, 7, 8 and 9 (Collection 2, Level 2) | Land-cover maps 1986–2025, 30 m | USGS, via Earth Engine |
+| Sentinel-2 surface reflectance | 10 m maps for 2016–2025 | ESA Copernicus, via Earth Engine |
 | JRC Global Surface Water v1.4 | Independent check of lagoon-water change, 1984–2021 | Pekel et al. (2016) |
 | Global Mangrove Watch v3 | Check of mangrove extent, 1996–2020 | Bunting et al. |
 | GHSL built-up surface (R2023A) | Built-up growth, consistent with the earlier flood-risk study | European Commission JRC |
@@ -46,7 +46,7 @@ All data are free.
 
 ## Methods
 
-1. **Land-cover mapping.** Dry-season (November–March) cloud-free composites for 1986, 2000, 2013 and 2024, classified with a Random Forest (300 trees) into water, wetland/mangrove, other vegetation, built-up and bare sand/fill. Inputs are the reflectance bands, NDVI, MNDWI, NDBI and elevation. Script: [`gee_wetland_change.js`](gee_wetland_change.js).
+1. **Land-cover mapping.** Dry-season (November–March) cloud-free composites for 1986, 2000, 2013 and 2025 (roughly evenly spaced, 12–14 years apart), classified with a Random Forest (300 trees) into water, wetland/mangrove, other vegetation, built-up and bare sand/fill. Inputs are the reflectance bands, NDVI, MNDWI, NDBI and elevation. Script: [`gee_wetland_change.js`](gee_wetland_change.js).
 2. **Accuracy and area estimation.** A confusion matrix for each map, with producer's and user's accuracy, and stratified area estimates with 95 % confidence intervals following Olofsson et al. (2014), rather than raw pixel counts.
 3. **Change detection.** From–to change matrices between epochs. LandTrendr on annual Landsat composites is used to date when each pixel was filled, which no published Lagos study has done.
 4. **Lost flood storage.** For every pixel converted from wetland or water to fill or built-up:
@@ -55,7 +55,7 @@ All data are free.
 
    where $WL_{\text{ref}}$ is a reference lagoon water level and $z_{\text{pre}}$ is the ground level before filling. Because global DEMs have errors of one to two metres in flat coastal areas, the result is reported as a Monte Carlo distribution (median and 5–95 % range), not a single number.
 5. **Feedback loop.** Flood extents mapped from Sentinel-1 for recent events are compared with later land-cover change, to test whether flooded wetland is more likely to be filled in the following years.
-6. **Projection to 2050.** A land-change model (CA-Markov and an artificial neural network) is first validated by hindcasting 2013 → 2024 and reporting the Figure of Merit. It is then run under three scenarios: current trend, wetland protection, and continued megaproject reclamation. Results are combined with AR6 sea-level rise and published subsidence rates.
+6. **Projection to 2050.** A land-change model (CA-Markov and an artificial neural network) is first validated by hindcasting 2013 → 2025 and reporting the Figure of Merit. It is then run under three scenarios: current trend, wetland protection, and continued megaproject reclamation. Results are combined with AR6 sea-level rise and published subsidence rates.
 
 ## Where machine learning is used
 
@@ -74,7 +74,7 @@ All data are free.
 
 - [x] Literature review ([LITERATURE_REVIEW.md](LITERATURE_REVIEW.md))
 - [x] Earth Engine classification script
-- [ ] Training data and land-cover maps for 1986, 2000, 2013 and 2024
+- [ ] Training data and land-cover maps for 1986, 2000, 2013 and 2025
 - [ ] Accuracy assessment and area estimates
 - [ ] Change detection and dating of fill
 - [ ] Lost-storage estimate
