@@ -12,6 +12,9 @@
 //        water = 0, wetland_mangrove = 1, other_vegetation = 2,
 //        built_up = 3, bare_sand_fill = 4
 //    Name the imports exactly: water, wetland, vegetation, builtup, bare.
+//    (Inputs: dry-season bands and indices, elevation, plus the year's
+//    greenest NDVI and its seasonal change, which separate dry vegetation
+//    from bare sand.)
 //    Aim for 50–100 well-spread points per class. Use the true-colour
 //    composite, the JRC water layer and Google satellite basemap to judge.
 // 4. Run. Check the accuracy printed in the Console, then use the
@@ -52,32 +55,52 @@ function renameOLI(img) {  // Landsat 8 / 9
                     ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']);
 }
 
-function landsatComposite(year) {
-  var start = ee.Date.fromYMD(year - 1, 11, 1);
-  var end = ee.Date.fromYMD(year, 3, 31);
+// All clear Landsat images between two dates, with common band names
+function landsatCollection(start, end, year) {
   var tm = ee.ImageCollection('LANDSAT/LT05/C02/T1_L2')
     .merge(ee.ImageCollection('LANDSAT/LE07/C02/T1_L2'))
     .filterBounds(aoi).filterDate(start, end).map(maskAndScale).map(renameTM);
   var oli = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
     .merge(ee.ImageCollection('LANDSAT/LC09/C02/T1_L2'))
     .filterBounds(aoi).filterDate(start, end).map(maskAndScale).map(renameOLI);
-  var col = year >= 2013 ? oli : tm;
-  return col.median().clip(aoi);
+  return year >= 2013 ? oli : tm;
+}
+
+// Dry-season (Nov–Mar) median composite: the main image that is classified
+function landsatComposite(year) {
+  var start = ee.Date.fromYMD(year - 1, 11, 1);
+  var end = ee.Date.fromYMD(year, 3, 31);
+  return landsatCollection(start, end, year).median().clip(aoi);
+}
+
+// Seasonal greenness over the 12 months ending with that dry season.
+// NDVI_max = greenest value the pixel reached (greenest-pixel composite).
+// NDVI_amp = how much greener it got than in the dry season.
+// Dry grass and farmland green up in the rainy season; bare sand and
+// buildings do not, so these two bands help separate vegetation from bare.
+function seasonalGreenness(year, dryNdvi) {
+  var start = ee.Date.fromYMD(year - 1, 4, 1);
+  var end = ee.Date.fromYMD(year, 3, 31);
+  var ndviMax = landsatCollection(start, end, year)
+    .map(function (img) { return img.normalizedDifference(['nir', 'red']).rename('NDVI_max'); })
+    .max().clip(aoi);
+  var amp = ndviMax.subtract(dryNdvi).rename('NDVI_amp');
+  return ndviMax.addBands(amp);
 }
 
 // ---------------- features -------------------------------------------
-function addFeatures(img) {
+function addFeatures(img, year) {
   var ndvi = img.normalizedDifference(['nir', 'red']).rename('NDVI');
   var mndwi = img.normalizedDifference(['green', 'swir1']).rename('MNDWI');
   var ndbi = img.normalizedDifference(['swir1', 'nir']).rename('NDBI');
   var elev = ee.ImageCollection('COPERNICUS/DEM/GLO30').select('DEM')
     .mosaic().clip(aoi).rename('elevation');
-  return img.addBands([ndvi, mndwi, ndbi, elev]);
+  return img.addBands([ndvi, mndwi, ndbi, elev, seasonalGreenness(year, ndvi)]);
 }
 
-var composite = addFeatures(landsatComposite(YEAR));
+var composite = addFeatures(landsatComposite(YEAR), YEAR);
 var bands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2',
-             'NDVI', 'MNDWI', 'NDBI', 'elevation'];
+             'NDVI', 'MNDWI', 'NDBI', 'elevation', 'NDVI_max', 'NDVI_amp'];
 
 Map.addLayer(composite, {bands: ['red', 'green', 'blue'], min: 0, max: 0.25},
              'True colour ' + YEAR);
@@ -125,6 +148,28 @@ var areas = areaImg.reduceRegion({
   geometry: aoi, scale: 30, maxPixels: 1e13, tileScale: 4
 });
 print('Mapped area by class (km²), ' + YEAR, areas);
+
+// ---------------- plain-text summary (easy to copy) --------------------
+var names = ['water', 'wetland', 'vegetation', 'builtup', 'bare'];
+function pct(list) {
+  return ee.List(list).map(function (x) { return ee.Number(x).multiply(100).round(); });
+}
+var pa = pct(ee.Array(cm.producersAccuracy()).project([0]).toList());
+var ua = pct(ee.Array(cm.consumersAccuracy()).project([1]).toList());
+var groups = ee.List(areas.get('groups'));
+var areaDict = ee.Dictionary.fromLists(
+  groups.map(function (g) { return ee.List(names).get(ee.Number(ee.Dictionary(g).get('class')).int()); }),
+  groups.map(function (g) { return ee.Number(ee.Dictionary(g).get('sum')).round(); }));
+print(ee.String('SUMMARY ' + YEAR + ' | training points: ').cat(ee.Number(train.size()).format())
+  .cat(' | test points: ').cat(ee.Number(test.size()).format())
+  .cat(' | overall accuracy %: ').cat(ee.Number(cm.accuracy()).multiply(100).format('%.1f'))
+  .cat(' | kappa: ').cat(ee.Number(cm.kappa()).format('%.2f')));
+print(ee.String('PRODUCERS % : ').cat(ee.String.encodeJSON(ee.Dictionary.fromLists(names, pa))));
+print(ee.String('USERS % : ').cat(ee.String.encodeJSON(ee.Dictionary.fromLists(names, ua))));
+print(ee.String('MATRIX (rows = truth, columns = map; order water, wetland, vegetation, builtup, bare): ')
+  .cat(ee.String.encodeJSON(cm.array().toList())));
+print(ee.String('AREA km2 : ').cat(ee.String.encodeJSON(areaDict)));
+print(ee.String('IMPORTANCE : ').cat(ee.String.encodeJSON(ee.Dictionary(rf.explain()).get('importance'))));
 
 // ---------------- exports ---------------------------------------------
 Export.image.toDrive({
