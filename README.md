@@ -4,7 +4,7 @@ Atta Albert · Research in progress · Google Earth Engine, Landsat, Sentinel-2,
 
 **Keywords:** land reclamation, wetland loss, mangroves, dredging, flood storage, land-use change, Random Forest, Google Earth Engine, Lagos Lagoon, urban flooding
 
-**Status:** literature review and methods complete; satellite mapping under way. No results are reported yet.
+**Status:** first 2025 land-cover map complete (86.8 % overall accuracy, kappa 0.83; see [results/2025_first_map.md](results/2025_first_map.md)). Maps for earlier years and the change analysis are under way.
 
 ---
 
@@ -46,7 +46,7 @@ All data are free.
 
 ## Methods
 
-1. **Land-cover mapping.** Dry-season (November–March) cloud-free composites for 1986, 2000, 2013 and 2025 (roughly evenly spaced, 12–14 years apart), classified with a Random Forest (300 trees) into water, wetland/mangrove, other vegetation, built-up and bare sand/fill. Inputs are the reflectance bands, NDVI, MNDWI, NDBI and elevation. Script: [`gee_wetland_change.js`](gee_wetland_change.js).
+1. **Land-cover mapping.** Dry-season (November–March) cloud-free composites for 1986, 2000, 2013 and 2025 (roughly evenly spaced, 12–14 years apart), classified with a Random Forest (300 trees) into water, wetland/mangrove, other vegetation, built-up and bare sand/fill. Inputs are the reflectance bands, NDVI, MNDWI, NDBI, elevation, and the year's greenest NDVI and its seasonal range, which help separate dry-season grassland from bare sand. Script: [`gee_wetland_change.js`](gee_wetland_change.js).
 2. **Accuracy and area estimation.** A confusion matrix for each map, with producer's and user's accuracy, and stratified area estimates with 95 % confidence intervals following Olofsson et al. (2014), rather than raw pixel counts.
 3. **Change detection.** From–to change matrices between epochs. LandTrendr on annual Landsat composites is used to date when each pixel was filled, which no published Lagos study has done.
 4. **Lost flood storage.** For every pixel converted from wetland or water to fill or built-up:
@@ -74,7 +74,8 @@ All data are free.
 
 - [x] Literature review ([LITERATURE_REVIEW.md](LITERATURE_REVIEW.md))
 - [x] Earth Engine classification script
-- [ ] Training data and land-cover maps for 1986, 2000, 2013 and 2025
+- [x] Training data and land-cover map for 2025 (267 points; 86.8 % overall accuracy)
+- [ ] Land-cover maps for 1986, 2000 and 2013
 - [ ] Accuracy assessment and area estimates
 - [ ] Change detection and dating of fill
 - [ ] Lost-storage estimate
