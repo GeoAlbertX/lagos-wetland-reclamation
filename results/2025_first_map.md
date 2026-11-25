@@ -2,6 +2,10 @@
 
 *Dry-season Landsat 8/9 composite (November 2024 – March 2025), classified with a Random Forest (300 trees) in Google Earth Engine using [`gee_wetland_change.js`](../gee_wetland_change.js). Training points were placed by hand on the 2025 imagery, checked against high-resolution Google satellite imagery. Recorded 25 November 2026.*
 
+![Land cover of Lagos State, 2025](figures/landcover_2025.png)
+
+*Blue = water, dark green = wetland / mangrove, light green = other vegetation, red = built-up, orange = bare sand / fill. Thin blue slivers along the outer edge come from small differences between the mapped boundary (FAO GAUL 2015) and the boundary used for the figure (geoBoundaries); they are outside the mapped area.*
+
 ## Accuracy
 
 Accuracy is measured on the 30 % of training points held back from the model (76 points in the final run).
@@ -52,6 +56,12 @@ The first classification reached 78 % overall accuracy but confused vegetation w
 | Bare sand / fill | 310 |
 
 These are raw pixel counts and should not yet be cited. The wetland area in particular changed between runs (from 840 to 402 km²) as training data were added, and the test sample contains only about ten points per class. Final areas will be reported with 95 % confidence intervals from an independent stratified random validation sample, following Olofsson et al. (2014).
+
+## Data files
+
+- [`data/lagos_landcover_2025.tif`](data/lagos_landcover_2025.tif): the classified map (GeoTIFF, 30 m, EPSG:4326). Values: 0 water, 1 wetland / mangrove, 2 other vegetation, 3 built-up, 4 bare sand / fill. Pixels outside Lagos State are also stored as 0, so clip to the state boundary before use.
+- [`data/lagos_class_areas_2025.csv`](data/lagos_class_areas_2025.csv): mapped area per class (km², column `sum`).
+- [`data/lagos_accuracy_points_2025.csv`](data/lagos_accuracy_points_2025.csv): the 76 held-out test points with their reference class, mapped class and input values.
 
 ## Notes
 

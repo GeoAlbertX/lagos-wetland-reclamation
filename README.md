@@ -6,6 +6,12 @@ Atta Albert · Research in progress · Google Earth Engine, Landsat, Sentinel-2,
 
 **Status:** first 2025 land-cover map complete (86.8 % overall accuracy, kappa 0.83; see [results/2025_first_map.md](results/2025_first_map.md)). Maps for earlier years and the change analysis are under way.
 
+## First result
+
+![Land cover of Lagos State, 2025](results/figures/landcover_2025.png)
+
+The first 2025 land-cover map, made from 267 hand-placed training points, reaches **86.8 % overall accuracy (kappa 0.83)**. Details, the confusion matrix and how the map was improved step by step are in [results/2025_first_map.md](results/2025_first_map.md). Areas are provisional until the independent validation is done.
+
 ---
 
 ## Why this study
