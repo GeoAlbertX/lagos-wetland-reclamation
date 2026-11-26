@@ -55,6 +55,16 @@ The 2025 map was rebuilt in the same run from the 2025 pins and image (trained o
 4. **Built-up → bare (139 km²)** is also mostly confusion between bright roofs and sand. "Built-up or fill" combined is more reliable than either class alone.
 5. Eko Atlantic, the largest single reclamation, is mostly outside the FAO GAUL 2015 boundary used here, so reclamation from the sea is undercounted.
 
+## Figures and data files
+
+![Land cover of Lagos State, 2014](figures/landcover_2014.png)
+
+- [`data/lagos_landcover_2014.tif`](data/lagos_landcover_2014.tif): the classified 2014 map (GeoTIFF, 30 m, EPSG:4326; same grid and values as the 2025 map. Pixels outside Lagos State are also stored as 0, so clip to the state boundary before use).
+- [`data/lagos_class_areas_2014.csv`](data/lagos_class_areas_2014.csv): mapped area per class (km², column `sum`).
+- [`data/lagos_accuracy_points_2014.csv`](data/lagos_accuracy_points_2014.csv): the 67 held-out test points.
+- [`figures/swipe_2014.png`](figures/swipe_2014.png) and [`figures/swipe_2025.png`](figures/swipe_2025.png): matching 16:9 versions of both maps for a swipe comparison.
+- Figures are drawn with [`tools/make_landcover_figure.py`](../tools/make_landcover_figure.py), masked with the Lagos State outline from geoBoundaries.
+
 ## Next steps
 
 1. Check the "Wetland 2014 → built-up or sand by 2025" layer visually in a few places (Lekki–Ajah corridor, Ibeju-Lekki).
