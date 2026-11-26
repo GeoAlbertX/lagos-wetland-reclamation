@@ -65,6 +65,14 @@ The 2025 map was rebuilt in the same run from the 2025 pins and image (trained o
 - [`figures/swipe_2014.png`](figures/swipe_2014.png) and [`figures/swipe_2025.png`](figures/swipe_2025.png): matching 16:9 versions of both maps for a swipe comparison.
 - Figures are drawn with [`tools/make_landcover_figure.py`](../tools/make_landcover_figure.py), masked with the Lagos State outline from geoBoundaries.
 
+### Where the change happened
+
+![Where Lagos became built-up or sand fill, 2014 to 2025](figures/change_2014_2025.png)
+
+![2014 and 2025 close-ups of the Lekki–Ajah corridor and Ibeju-Lekki](figures/hotspots_2014_2025.png)
+
+These are drawn from the two exported GeoTIFFs with [`tools/make_change_figures.py`](../tools/make_change_figures.py), which also writes the zoomed swipe views (`swipe_zoom_2014.png`, `swipe_zoom_2025.png`) and the StoryMap cover (`cover.png`). They show *where* change happened. The areas above come from the Earth Engine change table, because the exports use a slightly different boundary and 2025 training split.
+
 ## Next steps
 
 1. Check the "Wetland 2014 → built-up or sand by 2025" layer visually in a few places (Lekki–Ajah corridor, Ibeju-Lekki).
