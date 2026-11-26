@@ -52,7 +52,7 @@ All data are free.
 
 ## Methods
 
-1. **Land-cover mapping.** Dry-season (November–March) cloud-free composites for 1986, 2000, 2013 and 2025 (roughly evenly spaced, 12–14 years apart), classified with a Random Forest (300 trees) into water, wetland/mangrove, other vegetation, built-up and bare sand/fill. Inputs are the reflectance bands, NDVI, MNDWI, NDBI, elevation, and the year's greenest NDVI and its seasonal range, which help separate dry-season grassland from bare sand. Script: [`gee_wetland_change.js`](gee_wetland_change.js).
+1. **Land-cover mapping.** Dry-season (November–March) cloud-free composites for 1986, 2000, 2014 and 2025 (roughly evenly spaced, 11–14 years apart; 2014 rather than 2013 because Landsat 8 only began imaging in April 2013), classified with a Random Forest (300 trees) into water, wetland/mangrove, other vegetation, built-up and bare sand/fill. Inputs are the reflectance bands, NDVI, MNDWI, NDBI, elevation, and the year's greenest NDVI and its seasonal range, which help separate dry-season grassland from bare sand. Script: [`gee_wetland_change.js`](gee_wetland_change.js).
 2. **Accuracy and area estimation.** A confusion matrix for each map, with producer's and user's accuracy, and stratified area estimates with 95 % confidence intervals following Olofsson et al. (2014), rather than raw pixel counts.
 3. **Change detection.** From–to change matrices between epochs. LandTrendr on annual Landsat composites is used to date when each pixel was filled, which no published Lagos study has done.
 4. **Lost flood storage.** For every pixel converted from wetland or water to fill or built-up:
@@ -61,7 +61,7 @@ All data are free.
 
    where $WL_{\text{ref}}$ is a reference lagoon water level and $z_{\text{pre}}$ is the ground level before filling. Because global DEMs have errors of one to two metres in flat coastal areas, the result is reported as a Monte Carlo distribution (median and 5–95 % range), not a single number.
 5. **Feedback loop.** Flood extents mapped from Sentinel-1 for recent events are compared with later land-cover change, to test whether flooded wetland is more likely to be filled in the following years.
-6. **Projection to 2050.** A land-change model (CA-Markov and an artificial neural network) is first validated by hindcasting 2013 → 2025 and reporting the Figure of Merit. It is then run under three scenarios: current trend, wetland protection, and continued megaproject reclamation. Results are combined with AR6 sea-level rise and published subsidence rates.
+6. **Projection to 2050.** A land-change model (CA-Markov and an artificial neural network) is first validated by hindcasting 2014 → 2025 and reporting the Figure of Merit. It is then run under three scenarios: current trend, wetland protection, and continued megaproject reclamation. Results are combined with AR6 sea-level rise and published subsidence rates.
 
 ## Where machine learning is used
 
@@ -81,7 +81,8 @@ All data are free.
 - [x] Literature review ([LITERATURE_REVIEW.md](LITERATURE_REVIEW.md))
 - [x] Earth Engine classification script
 - [x] Training data and land-cover map for 2025 (267 points; 86.8 % overall accuracy)
-- [ ] Land-cover maps for 1986, 2000 and 2013
+- [x] Land-cover map for 2014 (95.5 % overall accuracy) and first 2014 → 2025 change table ([results](results/2014_map_and_change.md))
+- [ ] Land-cover maps for 1986 and 2000
 - [ ] Accuracy assessment and area estimates
 - [ ] Change detection and dating of fill
 - [ ] Lost-storage estimate

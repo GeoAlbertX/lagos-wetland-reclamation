@@ -22,9 +22,19 @@
 // =====================================================================
 
 // ---------------- settings -------------------------------------------
-var YEAR = 2025;          // epochs used in the study: 1986, 2000, 2013, 2025
+var YEAR = 2014;          // epochs used in the study: 1986, 2000, 2014, 2025
                           // (each uses the dry season ending in that year, e.g. 2025 = Nov 2024 – Mar 2025)
+                          // 2014 rather than 2013: Landsat 8 only began imaging in April 2013, so the
+                          // 2013 dry season would rely on Landsat 7 with scan-line gaps.
+var ASSET_FOLDER = '';    // optional: your Earth Engine asset folder, e.g. 'projects/<your-project>/assets'.
+                          // If set, the classified map is also exported there for the change analysis.
 var TREES = 300;
+// Extra pins placed directly on this year's true-colour image (earlier years
+// only). They skip the pin check because they are already correct for this
+// year. Create them with the point tool as imports, e.g. wetland14 (class 1)
+// and bare14 (class 4), then change the line below to:
+//   var EXTRA_PINS = wetland14.merge(bare14);
+var EXTRA_PINS = ee.FeatureCollection([]);
 var SEED = 42;
 
 // Study area: Lagos State (FAO GAUL level 1)
@@ -112,15 +122,70 @@ var gsw = ee.Image('JRC/GSW1_4/GlobalSurfaceWater').clip(aoi);
 Map.addLayer(gsw.select('occurrence'), {min: 0, max: 100, palette: ['white', 'blue']},
              'JRC water occurrence 1984–2021', false);
 
-// ---------------- training and classification ------------------------
+// ---------------- training points --------------------------------------
 // The training layers (water, wetland, vegetation, builtup, bare) are the
 // geometry imports created in step 3 above.
 var points = water.merge(wetland).merge(vegetation).merge(builtup).merge(bare);
+var names0 = ee.List(['water', 'wetland', 'vegetation', 'builtup', 'bare']);
 
-var samples = composite.select(bands).sampleRegions({
-  collection: points, properties: ['class'], scale: 30, tileScale: 4
-}).randomColumn('rand', SEED);
+// Pin values on this year's image
+var sampled = composite.select(bands).sampleRegions({
+  collection: points, properties: ['class'], scale: 30, tileScale: 4, geometries: true
+});
 
+// ---------------- pin check (earlier years only) ----------------------
+// Training pins are placed on the 2025 image. Land changes, so some pins
+// are wrong for an earlier year (e.g. a "builtup" pin on land that was
+// still wetland). A model trained on the 2025 image classifies each pin on
+// this year's image. Pins where it disagrees with the label are shown in
+// yellow. With USE_STABLE_PINS, only pins that look the same in both years
+// ("stable" pins) train this year's model, a standard way of reusing
+// training data for an earlier date.
+var USE_STABLE_PINS = true;
+var trainingSet = sampled;
+if (YEAR !== 2025) {
+  var ref = addFeatures(landsatComposite(2025), 2025);
+  var rfRef = ee.Classifier.smileRandomForest({numberOfTrees: TREES, seed: SEED})
+    .train({features: ref.select(bands).sampleRegions({
+              collection: points, properties: ['class'], scale: 30, tileScale: 4}),
+            classProperty: 'class', inputProperties: bands});
+  var checked = sampled.classify(rfRef, 'guess');
+  var stable = checked.filter(ee.Filter.equals({leftField: 'class', rightField: 'guess'}));
+  var suspect = checked.filter(ee.Filter.notEquals({leftField: 'class', rightField: 'guess'}))
+    .map(function (f) {
+      var c = f.geometry().coordinates();
+      return f.set({
+        label: names0.get(ee.Number(f.get('class')).int()),
+        looks_like: names0.get(ee.Number(f.get('guess')).int()),
+        pair: ee.String(names0.get(ee.Number(f.get('class')).int())).cat('->')
+                .cat(names0.get(ee.Number(f.get('guess')).int())),
+        lon: ee.Number(c.get(0)).format('%.4f'),
+        lat: ee.Number(c.get(1)).format('%.4f')
+      });
+    });
+  Map.addLayer(suspect, {color: 'yellow'}, 'Pins that look different in ' + YEAR);
+  print(ee.String('PIN CHECK ' + YEAR + ': ').cat(ee.Number(suspect.size()).format())
+    .cat(' of ').cat(ee.Number(checked.size()).format())
+    .cat(" pins look different on this year's image (yellow on the map)"));
+  print(ee.String('CHANGED PINS (your label -> what it looks like in ' + YEAR + '): ')
+    .cat(ee.String.encodeJSON(suspect.aggregate_histogram('pair'))));
+  var keptCounts = stable.map(function (f) {
+    return f.set('name', names0.get(ee.Number(f.get('class')).int()));
+  }).aggregate_histogram('name');
+  print(ee.String('STABLE PINS PER CLASS (used for training): ')
+    .cat(ee.String.encodeJSON(keptCounts)));
+  print('Pins that look different (label = your class, looks_like = this year)',
+        suspect.select(['label', 'looks_like', 'lon', 'lat'], null, false));
+  if (USE_STABLE_PINS) { trainingSet = stable; }
+  var extraSampled = composite.select(bands).sampleRegions({
+    collection: EXTRA_PINS, properties: ['class'], scale: 30, tileScale: 4, geometries: true
+  });
+  print(ee.String('EXTRA ' + YEAR + ' PINS: ').cat(ee.Number(extraSampled.size()).format()));
+  trainingSet = trainingSet.merge(extraSampled);
+}
+
+// ---------------- classification ---------------------------------------
+var samples = trainingSet.randomColumn('rand', SEED);
 var train = samples.filter(ee.Filter.lt('rand', 0.7));
 var test = samples.filter(ee.Filter.gte('rand', 0.7));
 
@@ -171,6 +236,30 @@ print(ee.String('MATRIX (rows = truth, columns = map; order water, wetland, vege
 print(ee.String('AREA km2 : ').cat(ee.String.encodeJSON(areaDict)));
 print(ee.String('IMPORTANCE : ').cat(ee.String.encodeJSON(ee.Dictionary(rf.explain()).get('importance'))));
 
+// ---------------- change from this year to 2025 (earlier years only) ----
+// The 2025 map is rebuilt here from the 2025 pins and image, so both years
+// can be compared pixel by pixel. Each pixel gets a "from -> to" class pair.
+if (YEAR !== 2025) {
+  var map2025 = ref.select(bands).classify(rfRef).rename('class');
+  var trans = classified.multiply(10).add(map2025).rename('trans');
+  var transAreas = ee.Image.pixelArea().divide(1e6).addBands(trans).reduceRegion({
+    reducer: ee.Reducer.sum().group({groupField: 1, groupName: 'trans'}),
+    geometry: aoi, scale: 30, maxPixels: 1e13, tileScale: 4
+  });
+  var tl = ee.List(transAreas.get('groups'));
+  var transDict = ee.Dictionary.fromLists(
+    tl.map(function (g) {
+      var code = ee.Number(ee.Dictionary(g).get('trans')).int();
+      return ee.String(names0.get(code.divide(10).int())).cat('->').cat(names0.get(code.mod(10)));
+    }),
+    tl.map(function (g) { return ee.Number(ee.Dictionary(g).get('sum')).round(); }));
+  print(ee.String('CHANGE ' + YEAR + '->2025 km2 : ').cat(ee.String.encodeJSON(transDict)));
+  var lostWet = classified.eq(1).and(map2025.eq(3).or(map2025.eq(4)));
+  var newLand = classified.eq(0).and(map2025.eq(3).or(map2025.eq(4)));
+  Map.addLayer(lostWet.selfMask(), {palette: ['ff00ff']}, 'Wetland ' + YEAR + ' -> built-up or sand by 2025', false);
+  Map.addLayer(newLand.selfMask(), {palette: ['ffff00']}, 'Water ' + YEAR + ' -> built-up or sand by 2025', false);
+}
+
 // ---------------- exports ---------------------------------------------
 Export.image.toDrive({
   image: classified.toByte(),
@@ -194,6 +283,15 @@ Export.table.toDrive({
   folder: 'lagos_wetlands',
   fileFormat: 'CSV'
 });
+
+if (ASSET_FOLDER) {
+  Export.image.toAsset({
+    image: classified.toByte(),
+    description: 'lagos_landcover_' + YEAR + '_asset',
+    assetId: ASSET_FOLDER + '/lagos_landcover_' + YEAR,
+    region: aoi, scale: 30, maxPixels: 1e13
+  });
+}
 
 // Next steps (separate scripts): compare epochs to map wetland converted to
 // built-up or bare fill, then estimate lost flood storage from the DEM.
